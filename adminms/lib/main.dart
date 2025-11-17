@@ -5,7 +5,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'firebase_options.dart';
 import 'screens/Inventory.dart';
-import 'screens/employee.dart';
+import 'screens/dashboard.dart';
+import 'screens/Employee.dart';
 import 'screens/orders.dart';
 //import 'screens/dashboard.dart';
 //import 'screens/supplier.dart';
@@ -29,9 +30,9 @@ class MyApp extends StatelessWidget {
       onGenerateRoute: (settings) {
         Widget page = const Scaffold(body: Center(child: Text('Page not found')));
         switch (settings.name) {
-          //case '/dashboard':
-            //page = DashboardPage();
-            //break;
+          case '/dashboard':
+            page = DashboardPage();
+            break;
           case '/inventory':
             page = InventoryPage();
             break;

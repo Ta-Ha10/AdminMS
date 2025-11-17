@@ -5,13 +5,13 @@ import '../component/colors.dart';
 import '../widget/top_bar.dart';
 import '../widget/side_bar.dart';
 
-// Employee Model
 class Employee {
   final String id;
   final String name;
   final String phone;
   final String role;
   final double salary;
+  final DateTime hireDate;
 
   Employee({
     required this.id,
@@ -19,6 +19,7 @@ class Employee {
     required this.phone,
     required this.role,
     required this.salary,
+    required this.hireDate,
   });
 
   // Factory constructor to create Employee from Firestore document
@@ -30,6 +31,7 @@ class Employee {
       phone: data['phone'] ?? 'N/A',
       role: data['role'] ?? 'N/A',
       salary: (data['salary'] ?? 0.0).toDouble(),
+      hireDate: (data['hireDate'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
   }
 }
@@ -43,7 +45,85 @@ class EmployeePage extends StatefulWidget {
 
 class _EmployeePageState extends State<EmployeePage> {
   bool isSidebarVisible = true;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  String searchQuery = '';
+
+  // Fake employee data
+  final List<Employee> fakeEmployees = [
+    Employee(
+      id: '1',
+      name: 'Ahmed Hassan',
+      phone: '+966501234567',
+      role: 'Manager',
+      salary: 8000,
+      hireDate: DateTime(2020, 3, 15),
+    ),
+    Employee(
+      id: '2',
+      name: 'Fatima Al-Rashid',
+      phone: '+966502345678',
+      role: 'Head Chef',
+      salary: 7500,
+      hireDate: DateTime(2019, 7, 22),
+    ),
+    Employee(
+      id: '3',
+      name: 'Mohammed Ali',
+      phone: '+966503456789',
+      role: 'Sous Chef',
+      salary: 5500,
+      hireDate: DateTime(2021, 1, 10),
+    ),
+    Employee(
+      id: '4',
+      name: 'Layla Omar',
+      phone: '+966504567890',
+      role: 'Pastry Chef',
+      salary: 5000,
+      hireDate: DateTime(2022, 5, 18),
+    ),
+    Employee(
+      id: '5',
+      name: 'Karim Ibrahim',
+      phone: '+966505678901',
+      role: 'Server',
+      salary: 3500,
+      hireDate: DateTime(2022, 9, 3),
+    ),
+    Employee(
+      id: '6',
+      name: 'Sara Ahmed',
+      phone: '+966506789012',
+      role: 'Cashier',
+      salary: 3200,
+      hireDate: DateTime(2023, 2, 14),
+    ),
+    Employee(
+      id: '7',
+      name: 'Hassan Mahmoud',
+      phone: '+966507890123',
+      role: 'Server',
+      salary: 3500,
+      hireDate: DateTime(2023, 6, 7),
+    ),
+    Employee(
+      id: '8',
+      name: 'Noor Al-Kareem',
+      phone: '+966508901234',
+      role: 'Manager',
+      salary: 8500,
+      hireDate: DateTime(2021, 11, 20),
+    ),
+  ];
+
+  List<Employee> getFilteredEmployees() {
+    if (searchQuery.isEmpty) {
+      return fakeEmployees;
+    }
+    return fakeEmployees
+        .where((emp) =>
+            emp.name.toLowerCase().contains(searchQuery.toLowerCase()))
+        .toList();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -85,104 +165,122 @@ class _EmployeePageState extends State<EmployeePage> {
 
                 // Content Area - Table fills entire remaining space
                 Expanded(
-                  child: StreamBuilder<QuerySnapshot>(
-                    stream: _firestore.collection('employees').snapshots(),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(
-                          child: CircularProgressIndicator(),
-                        );
-                      }
-
-                      if (snapshot.hasError) {
-                        return Center(
-                          child: Text('Error: ${snapshot.error}'),
-                        );
-                      }
-
-                      if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                        return Center(
-                          child: Text(
-                            'No employees found',
-                            style: TextStyle(
-                              fontSize: 18,
-                              color: AppColors.pr,
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Employee Management',
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.pr,
+                          ),
+                        ),
+                        const Gap(16),
+                        // Search Bar
+                        TextField(
+                          onChanged: (value) {
+                            setState(() {
+                              searchQuery = value;
+                            });
+                          },
+                          decoration: InputDecoration(
+                            hintText: 'Search by employee name...',
+                            prefixIcon: const Icon(Icons.search),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
                             ),
                           ),
-                        );
-                      }
-
-                      final employees = snapshot.data!.docs
-                          .map((doc) => Employee.fromFirestore(doc))
-                          .toList();
-
-                      return SingleChildScrollView(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Employee Management',
-                              style: TextStyle(
-                                fontSize: 28,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.pr,
-                              ),
-                            ),
-                            const Gap(16),
-                            Container(
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.grey[400]!),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                child: DataTable(
-                                  columns: const [
-                                    DataColumn(label: Text('ID', style: TextStyle(fontWeight: FontWeight.bold))),
-                                    DataColumn(label: Text('Name', style: TextStyle(fontWeight: FontWeight.bold))),
-                                    DataColumn(label: Text('Phone', style: TextStyle(fontWeight: FontWeight.bold))),
-                                    DataColumn(label: Text('Role', style: TextStyle(fontWeight: FontWeight.bold))),
-                                    DataColumn(label: Text('Salary (SAR)', style: TextStyle(fontWeight: FontWeight.bold))),
-                                  ],
-                                  rows: employees.map((employee) {
-                                    return DataRow(
-                                      cells: [
-                                        DataCell(Text(employee.id)),
-                                        DataCell(Text(employee.name)),
-                                        DataCell(Text(employee.phone)),
-                                        DataCell(
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                            decoration: BoxDecoration(
-                                              color: _getRoleColor(employee.role).withValues(alpha: 0.2),
-                                              borderRadius: BorderRadius.circular(4),
-                                            ),
-                                            child: Text(
-                                              employee.role,
-                                              style: TextStyle(
-                                                color: _getRoleColor(employee.role),
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                        DataCell(
-                                          Text(
-                                            'SAR ${employee.salary.toStringAsFixed(2)}',
-                                            style: const TextStyle(fontWeight: FontWeight.w600),
-                                          ),
-                                        ),
-                                      ],
-                                    );
-                                  }).toList(),
-                                ),
-                              ),
-                            ),
-                          ],
                         ),
-                      );
-                    },
+                        const Gap(16),
+                        // Results info
+                        Text(
+                          'Found ${getFilteredEmployees().length} employee(s)',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey,
+                          ),
+                        ),
+                        const Gap(12),
+                        // Table
+                        Container(
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey[400]!),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: DataTable(
+                              columns: const [
+                                DataColumn(
+                                    label: Text('Name',
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.bold))),
+                                DataColumn(
+                                    label: Text('Phone',
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.bold))),
+                                DataColumn(
+                                    label: Text('Role',
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.bold))),
+                                DataColumn(
+                                    label: Text('Hire Date',
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.bold))),
+                                DataColumn(
+                                    label: Text('Salary (EGP)',
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.bold))),
+                              ],
+                              rows: getFilteredEmployees().map((employee) {
+                                return DataRow(
+                                  cells: [
+                                    DataCell(Text(employee.name)),
+                                    DataCell(Text(employee.phone)),
+                                    DataCell(
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 8, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: _getRoleColor(employee.role)
+                                              .withValues(alpha: 0.2),
+                                          borderRadius:
+                                              BorderRadius.circular(4),
+                                        ),
+                                        child: Text(
+                                          employee.role,
+                                          style: TextStyle(
+                                            color: _getRoleColor(
+                                                employee.role),
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    DataCell(Text(
+                                        '${employee.hireDate.day}/${employee.hireDate.month}/${employee.hireDate.year}')),
+                                    DataCell(
+                                      Text(
+                                        'EGP ${employee.salary.toStringAsFixed(2)}',
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.w600),
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
